@@ -95,23 +95,22 @@ int main(int argc, char **argv) {
 				printf("Error getting liveview frames %x\n", ptp_get_return_code(r));
 				goto error;
 			} else if (rc == 0) {
+				usleep(1000);
 				continue;
 			}
 
-			printf("Outputting bytes\n");
 			int sent = fwrite(ptp_get_payload(r) + param.payload_offset_to_data, rc, 1, p);
-			if (sent != rc) {
-				printf("Error sending data\n");
-				goto error;
-			}
 		} else {
 			printf("Unknown liveview type");
 			goto error;
 		}
+
+		usleep(10);
 	}
 
 	ptp_close_session(r);
 	error:;
+	ptp_dump(r);
 	ptp_device_close(r);
 	ptp_close(r);
 
