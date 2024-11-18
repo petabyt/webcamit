@@ -59,6 +59,8 @@ int main(int argc, char **argv) {
 
 	if (ptp_device_init(r)) {
 		puts("Device connection error");
+		ptp_close(r);
+		fclose(p);
 		return 0;
 	}
 
