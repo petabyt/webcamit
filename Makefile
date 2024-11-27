@@ -1,6 +1,6 @@
 CAMLIB := $(HOME)/AndroidStudioProjects/fudge/lib/camlib
 ifeq ($(wildcard $(CAMLIB)),)
-CAMLIB := $(HOME)/Documents/camlib
+CAMLIB := $(HOME)/Documents/fudge/lib/camlib
 endif
 
 CAMLIB_A := $(CAMLIB)/libcamlib.a
@@ -13,8 +13,10 @@ else
 LDFLAGS += -lusb-1.0
 endif
 
-webcamit.out: camlib main.c
-	$(CC) $(CFLAGS) main.c $(CAMLIB_A) $(LDFLAGS) -o webcamit.out
+OUT := main.o
+
+webcamit.out: camlib $(OUT)
+	$(CC) $(OUT) $(CAMLIB_A) $(LDFLAGS) -o webcamit.out
 
 .PHONY: camlib
 camlib:

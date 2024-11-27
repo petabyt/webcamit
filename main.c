@@ -1,15 +1,16 @@
-// ffmpeg -f mjpeg -i - -vcodec rawvideo -pix_fmt yuv420p -threads 0 -f sdl2 "Output Window"
-// ffmpeg -i - -vcodec rawvideo -pix_fmt yuv420p -threads 0 -f v4l2 /dev/video6
-
 // Test EOS Liveview
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <signal.h>
 #include <camlib.h>
 
-void ptp_verbose_log(char *fmt, ...) {
-	(void)fmt;
-}
+static struct PtpRuntime *global_r;
+static FILE *current_pipe;
+
+//void ptp_verbose_log(char *fmt, ...) {
+//	(void)fmt;
+//}
 
 FILE *create_ffmpeg_window_pipe() {
 	char buffer[1024];
@@ -35,7 +36,7 @@ FILE *create_ffmpeg_video_pipe() {
 	sprintf(buffer,
 		"%s -i - -vcodec rawvideo -pix_fmt yuv420p -threads 0 -f v4l2 %s",
 		"ffmpeg",
-		"/dev/video6"
+		"/dev/video10"
 	);
 	FILE *p = popen(buffer, "w");
 	if (p == NULL) {
@@ -49,22 +50,35 @@ FILE *create_ffmpeg_video_pipe() {
 	return p;
 }
 
-int main(int argc, char **argv) {
-	int rc = 0;
+void on_quit(int status) {
+	printf("Closing down\n");
+	struct PtpRuntime *r = global_r;
+	ptp_mutex_lock(r);
+	ptp_close_session(r);
+	ptp_device_close(r);
+	ptp_mutex_unlock(r);
 
-	FILE *p = create_ffmpeg_video_pipe();
-	if (p == NULL) return -1;
+	// Have to wait on other threads to exit to close r
+	// ptp_close(r);
 
-	struct PtpRuntime *r = ptp_new(PTP_USB);
+	printf("Closing output pipe\n");
+	pclose(current_pipe);
+	printf("Goodbye\n");
+	exit(0);
+}
 
+int liveview_thread(struct PtpRuntime *r) {
 	if (ptp_device_init(r)) {
-		puts("Device connection error");
+		puts("No device found");
 		ptp_close(r);
-		fclose(p);
 		return 0;
 	}
 
-	rc = ptp_open_session(r);
+	FILE *p = create_ffmpeg_video_pipe();
+	if (p == NULL) return -1;
+	current_pipe = p;
+
+	int rc = ptp_open_session(r);
 	if (rc) goto error;
 
 	struct PtpDeviceInfo di;
@@ -81,7 +95,7 @@ int main(int argc, char **argv) {
 
 	rc = ptp_liveview_init(r);
 	if (rc) {
-		printf("Failed to init liveview\n");
+		printf("Failed to init liveview %d\n", rc);
 		goto error;
 	}
 
@@ -110,11 +124,33 @@ int main(int argc, char **argv) {
 
 	ptp_close_session(r);
 	error:;
-	ptp_dump(r);
-	ptp_device_close(r);
-	ptp_close(r);
+//	ptp_device_close(r);
+//	ptp_close(r);
 
 	fclose(p);
+	return 0;	
+}
 
-	return rc;
+void *main_app_thread(void *arg) {
+	struct PtpRuntime *r = (struct PtpRuntime *)arg;
+	liveview_thread(r);
+	pthread_exit(NULL);
+	return NULL;
+}
+
+int main(int argc, char **argv) {
+	signal(SIGINT, on_quit);
+
+	pthread_t thread;
+
+	struct PtpRuntime *r = ptp_new(PTP_USB);
+	global_r = r;
+
+	if (pthread_create(&thread, NULL, main_app_thread, r)) {
+		return -1;
+	}
+
+	pthread_join(thread, NULL);
+
+	return 0;
 }
