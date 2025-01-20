@@ -1,4 +1,5 @@
 // This is a v4l2loopback config script that has to be run as root.
+// TODO: This can just be a shell script
 #include <stdio.h>
 #include <stdlib.h>
 
