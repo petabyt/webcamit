@@ -3,38 +3,16 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <signal.h>
-#include <camlib.h>
+#include <libpict.h>
 #include "wcit.h"
 
-#if 0
-
-init ffmpeg pipe
-init usb watch:
-  new thread:
-    wait for usb hotplug...
-	trigger usb_connect thread
-
-usb_connect thread:
-  check usb device
-  while true:
-    get free video device
-	start video pipe
-	start camera service
-	...
-  if none, exit
-
-join usb watch thread
-
-#endif
-
-// webcamit.out: ../../libusb/os/threads_posix.h:46: usbi_mutex_lock: Assertion `pthread_mutex_lock(mutex) == 0' failed.
-// Because fork() copies this data and isn't synchronized across threads?
 static struct PtpRuntime *global_r = NULL;
 static FILE *current_pipe = NULL;
 
-//void ptp_verbose_log(char *fmt, ...) {
-//	(void)fmt;
-//}
+void ptp_verbose_log(char *fmt, ...) {}
+void ptp_error_log(char *fmt, ...) {}
+__attribute__ ((noreturn))
+void ptp_panic(char *fmt, ...) {abort();}
 
 FILE *create_ffmpeg_window_pipe(void) {
 	char buffer[1024];
@@ -53,7 +31,6 @@ FILE *create_ffmpeg_window_pipe(void) {
 	pthread_sigmask(SIG_SETMASK, &nset, NULL);
 	if (p == NULL) {
 		perror("Unable to open ffmpeg pipe");
-		fclose(p);
 		return NULL;
 	} else {
 		printf("Opened ffmpeg pipe\n");
@@ -72,7 +49,6 @@ FILE *create_ffmpeg_video_pipe(void) {
 	FILE *p = popen(buffer, "w");
 	if (p == NULL) {
 		perror("Unable to open ffmpeg pipe");
-		fclose(p);
 		return NULL;
 	} else {
 		printf("Opened ffmpeg pipe\n");
@@ -157,6 +133,8 @@ int register_camera(void) {
 			if (rc == PTP_CHECK_CODE || rc == 0) {
 				usleep(10);
 				if (first_frame == 0) {
+					// TODO: Resolution of this image seems to set the final resolution of many video players...
+					// So if the resolution changes after this image, it will be stretched.
 					FILE *f = fopen("assets/nosignal.jpg", "rb");
 					if (f == NULL) continue;
 

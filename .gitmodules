@@ -1,0 +1,6 @@
+[submodule "libs/libgphoto2"]
+	path = libs/libgphoto2
+	url = https://github.com/gphoto/libgphoto2.git
+[submodule "libs/libpict"]
+	path = libs/libpict
+	url = https://github.com/petabyt/libpict.git
