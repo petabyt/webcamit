@@ -4,3 +4,9 @@
 [submodule "libs/libpict"]
 	path = libs/libpict
 	url = https://github.com/petabyt/libpict.git
+[submodule "libs/libjpeg-turbo"]
+	path = libs/libjpeg-turbo
+	url = https://github.com/libjpeg-turbo/libjpeg-turbo.git
+[submodule "libs/libjpeg-turbo2"]
+	path = libs/libjpeg-turbo2
+	url = git@github.com:petabyt/libjpeg-turbo.git

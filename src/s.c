@@ -1,3 +1,4 @@
+// Scan for v4l2 ports
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

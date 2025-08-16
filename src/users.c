@@ -1,3 +1,4 @@
+// Monitor users of v4l2 ports to see when webcam is active or not active
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
